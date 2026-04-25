@@ -1,0 +1,9 @@
+{
+    "pickup_datetime": "BINIS_TARIH",
+    "dropoff_datetime": "INIS_TARIH",
+    "PULocationID": "BINIS_BOLGE_ID",
+    "DOLocationID": "INIS_BOLGE_ID",
+    "trip_distance": "MESAFE_KM",
+    "fare_amount": "UCRET",
+    "passenger_count": "YOLCU_SAYISI"
+}

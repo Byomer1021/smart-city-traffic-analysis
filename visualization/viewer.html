@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>New York City Trafik Haritası</title>
+  <!-- Leaflet CSS (no SRI to avoid local hash mismatch) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <style>
+    html, body { margin: 0; height: 100%; }
+    #map { width: 100%; height: 100%; }
+    .legend { background: white; padding: 8px; line-height: 1.4; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <!-- Leaflet JS (no SRI to avoid local hash mismatch) -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  ></script>
+  <script>
+    const mapDataPath = "/results/new_york_city/map_data.json";
+
+    const statusEl = document.createElement("div");
+    statusEl.style.position = "fixed";
+    statusEl.style.top = "10px";
+    statusEl.style.left = "10px";
+    statusEl.style.padding = "6px 10px";
+    statusEl.style.background = "rgba(0,0,0,0.65)";
+    statusEl.style.color = "#fff";
+    statusEl.style.fontSize = "12px";
+    statusEl.style.zIndex = 1000;
+    statusEl.textContent = "Yükleniyor...";
+    document.body.appendChild(statusEl);
+
+    function setStatus(msg, isError = false) {
+      statusEl.textContent = msg;
+      statusEl.style.background = isError ? "rgba(220,53,69,0.85)" : "rgba(0,0,0,0.65)";
+    }
+
+    const colorByType = {
+      hotspot: "#dc3545",
+      hub: "#1a73e8",
+      normal: "#28a745",
+    };
+
+    const map = L.map("map", { zoomControl: true, preferCanvas: true });
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      attribution: "© OpenStreetMap",
+    }).addTo(map);
+
+    fetch(mapDataPath)
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        setStatus("Veri yüklendi, harita hazırlanıyor...");
+        return r.json();
+      })
+      .then((data) => {
+        const center = [data.city.center_lat, data.city.center_lon];
+        map.setView(center, data.city.zoom || 11);
+
+        // Draw edges (top weighted)
+        const edges = data.edges || [];
+        edges.forEach((e) => {
+          if (!e.src_lat || !e.dst_lat) return;
+          const latlngs = [
+            [e.src_lat, e.src_lon],
+            [e.dst_lat, e.dst_lon],
+          ];
+          const weight = Math.max(1, e.weight_norm * 6);
+          L.polyline(latlngs, {
+            color: "#555",
+            weight,
+            opacity: 0.25,
+          }).addTo(map);
+        });
+
+        // Draw nodes
+        const markers = [];
+        (data.nodes || []).forEach((n) => {
+          if (!n.lat || !n.lon) return;
+          const size = 6 + (n.pagerank_norm || 0) * 14;
+          const color = colorByType[n.zone_type] || "#6c757d";
+          const marker = L.circleMarker([n.lat, n.lon], {
+            radius: size,
+            color: "white",
+            weight: 1,
+            fillColor: color,
+            fillOpacity: 0.9,
+          }).addTo(map);
+          marker.bindPopup(
+            `<b>${n.name}</b><br/>Rank: ${n.rank}<br/>PR: ${n.pagerank.toFixed(
+              5
+            )}<br/>Betw: ${n.betweenness.toFixed(5)}<br/>Community: ${
+              n.community
+            }<br/>In: ${n.in_flow} | Out: ${n.out_flow}`
+          );
+          markers.push(marker);
+        });
+
+        // Fit bounds to markers if available
+        const group = L.featureGroup(markers);
+        if (markers.length > 0) {
+          map.fitBounds(group.getBounds(), { padding: [20, 20] });
+        }
+
+        setStatus(`Yüklendi • ${markers.length} düğüm, ${edges.length} kenar`);
+
+        // Legend
+        const legend = L.control({ position: "bottomleft" });
+        legend.onAdd = function () {
+          const div = L.DomUtil.create("div", "legend");
+          div.innerHTML = `
+            <div><strong>Zone Tipi</strong></div>
+            <div><span style="display:inline-block;width:12px;height:12px;background:${colorByType.hotspot};margin-right:6px"></span>Hotspot</div>
+            <div><span style="display:inline-block;width:12px;height:12px;background:${colorByType.hub};margin-right:6px"></span>Hub</div>
+            <div><span style="display:inline-block;width:12px;height:12px;background:${colorByType.normal};margin-right:6px"></span>Normal</div>
+          `;
+          return div;
+        };
+        legend.addTo(map);
+      })
+      .catch((err) => {
+        console.error("map_data.json yüklenemedi", err);
+        setStatus(`Hata: ${err}`, true);
+      });
+
+    window.addEventListener("error", (e) => setStatus(`JS hata: ${e.message}`, true));
+  </script>
+</body>
+</html>

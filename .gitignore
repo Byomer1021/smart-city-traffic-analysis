@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Large raw & generated data
+data/nyc/*.parquet
+data/nyc/formatted/
+data/nyc/taxi_zones/
+data/nyc/taxi_zones.zip
+results/**
+!results/.gitkeep
+
+# Generated plots at root
+01_dashboard.png
+06_geo_map.png
+
+# Jupyter checkpoints
+.ipynb_checkpoints/

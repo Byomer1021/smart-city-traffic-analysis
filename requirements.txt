@@ -1,0 +1,25 @@
+# ═══════════════════════════════════════════
+# Lokal Pipeline Bağımlılıkları (pip install)
+# ═══════════════════════════════════════════
+pandas>=1.5.0
+numpy>=1.23.0
+networkx>=3.0
+matplotlib>=3.6.0
+seaborn>=0.12.0
+scipy>=1.10.0
+
+# Parquet okuma desteği (opsiyonel — gerçek veri için)
+# pyarrow>=12.0.0
+
+# NYC shapefile centroid üretimi (opsiyonel)
+# geopandas>=0.14.0
+
+# ═══════════════════════════════════════════
+# Spark Pipeline Bağımlılıkları (küme üzerinde)
+# ═══════════════════════════════════════════
+# pyspark>=3.5.0
+# graphframes>=0.6
+
+# NOT: Spark bağımlılıkları küme üzerinde yüklüdür.
+# GraphFrames, spark-submit --packages ile eklenir:
+#   --packages graphframes:graphframes:0.8.3-spark3.5-s_2.12

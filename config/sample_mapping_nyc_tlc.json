@@ -1,0 +1,9 @@
+{
+    "pickup_datetime": "tpep_pickup_datetime",
+    "dropoff_datetime": "tpep_dropoff_datetime",
+    "PULocationID": "PULocationID",
+    "DOLocationID": "DOLocationID",
+    "trip_distance": "trip_distance",
+    "fare_amount": "fare_amount",
+    "passenger_count": "passenger_count"
+}
