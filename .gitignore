@@ -19,9 +19,23 @@ data/nyc/taxi_zones.zip
 results/**
 !results/.gitkeep
 
+# NYC gercek-veri kosusunun (38.3M kayit) ciktilari rapor/sunum figurleri
+# olarak kullaniliyor; repoda dursun ki figurler kaynagiyla birlikte gelsin.
+# Ham/uretilmis trip CSV'leri buyuk oldugu icin disarida kalir.
+!results/new_york_city/
+!results/new_york_city/*.png
+!results/new_york_city/map_data.json
+
 # Generated plots at root
-01_dashboard.png
-06_geo_map.png
+# NOT: bas taraftaki "/" olmadan bu desenler her dizinde eslesiyordu ve
+# results/new_york_city/ altindaki rapor figurlerini de disliyordu.
+/01_dashboard.png
+/06_geo_map.png
 
 # Jupyter checkpoints
 .ipynb_checkpoints/
+
+# Secrets / SSH keys — ASLA commit edilmemeli
+*.pem
+*.key
+traffic-key.pem

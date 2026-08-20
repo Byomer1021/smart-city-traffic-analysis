@@ -155,8 +155,21 @@ def run_pagerank(G: nx.DiGraph, config: CityConfig, alpha=0.85) -> dict:
 # =============================================================================
 def compute_centrality(G: nx.DiGraph) -> dict:
     print("\n  [EK] Merkezilik metrikleri...")
+    # Betweenness: k ornekleme parametresi kaldirildi. Onceden
+    # k=min(100, N) ve seed=None kullaniliyordu; bu, ayni graf uzerinde bile
+    # her kosuda farkli skor uretiyordu (NYC grafinda JFK'nin normalize degeri
+    # kosudan kosuya 0.82-1.00 arasi oynadi, 1. sira JFK ile East Harlem South
+    # arasinda degisti). Orta boy graflarda tam hesap saniyeler suruyor ve
+    # deterministik. Cok buyuk graflarda ornekleme sart olur; o durumda seed
+    # sabitlenir ki sonuc tekrar uretilebilsin.
+    n = G.number_of_nodes()
+    if n <= 1000:
+        betweenness = nx.betweenness_centrality(G, weight="weight")
+    else:
+        betweenness = nx.betweenness_centrality(G, weight="weight", k=500, seed=42)
+
     return {
-        "betweenness": nx.betweenness_centrality(G, weight="weight", k=min(100, G.number_of_nodes())),
+        "betweenness": betweenness,
         "in_degree": nx.in_degree_centrality(G),
         "out_degree": nx.out_degree_centrality(G),
     }

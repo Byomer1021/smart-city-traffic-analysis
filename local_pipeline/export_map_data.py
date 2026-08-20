@@ -22,7 +22,19 @@ def slugify(name: str) -> str:
     ascii_name = normalized.encode("ascii", "ignore").decode("ascii")
     return ascii_name.lower().replace(" ", "_")
 
-def main(city_name="istanbul", num_trips=2_000_000):
+
+def read_trip_data(input_path) -> pd.DataFrame:
+    """CSV veya Parquet okur; tarih sutunlarini normalize eder."""
+    if str(input_path).lower().endswith(".parquet"):
+        df = pd.read_parquet(input_path)
+        for col in ("pickup_datetime", "dropoff_datetime"):
+            if col in df.columns:
+                df[col] = pd.to_datetime(df[col], errors="coerce")
+        return df
+    return pd.read_csv(input_path, parse_dates=["pickup_datetime", "dropoff_datetime"])
+
+
+def main(city_name="istanbul", num_trips=2_000_000, data_path=None):
     config = get_city_config(city_name)
     print(f"[INFO] {config.name} analizi başlıyor...")
 
@@ -31,12 +43,20 @@ def main(city_name="istanbul", num_trips=2_000_000):
     os.makedirs(RESULTS_DIR, exist_ok=True)
     data_file = RESULTS_DIR / f"{city_slug}_trips.csv"
 
-    if not os.path.exists(data_file):
+    if data_path:
+        provided_path = Path(data_path)
+        if not provided_path.is_absolute():
+            provided_path = PROJECT_ROOT / provided_path
+        if not provided_path.exists():
+            raise FileNotFoundError(f"Veri dosyasi bulunamadi: {provided_path}")
+        data_file = provided_path
+        print(f"[INFO] Harici veri kullanilacak: {data_file}")
+    elif not os.path.exists(data_file):
         df = generate_trip_data(config, num_trips=num_trips)
         save_data(df, RESULTS_DIR, city_slug)
 
     # ETL
-    df = pd.read_csv(data_file, parse_dates=["pickup_datetime", "dropoff_datetime"])
+    df = read_trip_data(data_file)
     df = df[df["trip_distance"] > 0]
     df = df[df["trip_duration_minutes"] > 0]
     df = df[df["trip_duration_minutes"] <= 300]
@@ -75,7 +95,17 @@ def main(city_name="istanbul", num_trips=2_000_000):
             node_comm[n] = i
 
     # Betweenness
-    betweenness = nx.betweenness_centrality(G, weight="weight", k=min(100, G.number_of_nodes()))
+    # Betweenness: k ornekleme parametresi kaldirildi. Onceden
+    # k=min(100, N) ve seed=None kullaniliyordu; bu, ayni graf uzerinde bile
+    # her kosuda farkli skor uretiyordu (NYC grafinda JFK'nin normalize degeri
+    # kosudan kosuya 0.82-1.00 arasi oynadi, 1. sira JFK ile East Harlem South
+    # arasinda degisti). Orta boy graflarda tam hesap saniyeler suruyor ve
+    # deterministik. Cok buyuk graflarda ornekleme sart olur; o durumda seed
+    # sabitlenir ki sonuc tekrar uretilebilsin.
+    if G.number_of_nodes() <= 1000:
+        betweenness = nx.betweenness_centrality(G, weight="weight")
+    else:
+        betweenness = nx.betweenness_centrality(G, weight="weight", k=500, seed=42)
     in_degree = dict(G.in_degree(weight="weight"))
     out_degree = dict(G.out_degree(weight="weight"))
 
@@ -209,5 +239,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--city", default="istanbul")
     parser.add_argument("--trips", type=int, default=2_000_000)
+    parser.add_argument("--data", default=None,
+                        help="Gercek veri dosyasi (CSV/Parquet) - verilirse sentetik uretim atlanir")
     args = parser.parse_args()
-    main(args.city, args.trips)
+    main(args.city, args.trips, args.data)

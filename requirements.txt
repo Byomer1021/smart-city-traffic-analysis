@@ -8,11 +8,19 @@ matplotlib>=3.6.0
 seaborn>=0.12.0
 scipy>=1.10.0
 
-# Parquet okuma desteği (opsiyonel — gerçek veri için)
-# pyarrow>=12.0.0
+# Parquet okuma (NYC gercek-veri akisi icin ZORUNLU)
+pyarrow>=12.0.0
 
 # NYC shapefile centroid üretimi (opsiyonel)
 # geopandas>=0.14.0
+
+
+# ═══════════════════════════════════════════
+# GNN Eklentisi (gnn_node2vec.py / gnn_visualize.py)
+# ═══════════════════════════════════════════
+node2vec>=0.4.6
+gensim>=4.3.0
+scikit-learn>=1.3.0
 
 # ═══════════════════════════════════════════
 # Spark Pipeline Bağımlılıkları (küme üzerinde)
