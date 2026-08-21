@@ -391,6 +391,55 @@ tepelidir — 20'den az bağlantılı çok sayıda çevre bölge ve 150–250+ b
 bir çekirdek grup. Bu, gerçek dünya ağlarında beklenen güç yasası benzeri
 yapıdır.
 
+### 6.7 Node2Vec gömmeleri — konumsal benzerlik
+
+![Node2Vec gömmeleri](../results/new_york_city/07_gnn_embeddings.png)
+
+*Şekil 7 — 128 boyutlu Node2Vec gömmelerinin t-SNE ile 2 boyuta indirilmiş
+hâli. Solda topluluk üyeliğine, sağda PageRank kritiklik skoruna göre
+renklendirme.*
+
+PageRank "bu bölge kritik mi" sorusunu cevaplar; Node2Vec "bu bölge hangi
+bölgelere benziyor" sorusunu ekler. Her bölge için tam çizge üzerinde
+(258 düğüm, 9.990 kenar) 10 yürüyüş × 80 adım yanlı rastgele yürüyüşle
+128 boyutlu vektör öğrenilmiş, ardından kosinüs benzerliği hesaplanmıştır.
+
+**Sol panel** üç topluluğun gömme uzayında da ayrıştığını gösterir: T2
+(Midtown/Downtown) sağ üstte sıkı bir küme, T3 (Upper Manhattan) sağ altta,
+T1 (dış ilçeler) sola yayılmış. Louvain topluluk yapısını akış ağından, Node2Vec
+ise yürüyüş komşuluklarından çıkarır; iki bağımsız yöntemin aynı bölünmeye
+varması yapının gerçekliğini destekler.
+
+**Sağ panel** projenin ana tezine doğrudan görsel kanıt sunar. PageRank
+sıralamasında ilk 10'a giren bölgeler sağda sıkı bir küme oluşturur — hepsi
+Manhattan çekirdeğindedir ve birbirine benzer konumdadır. **Tek istisna #4,
+yani JFK Airport'tur:** kümenin tamamen dışında, sol tarafta tek başına
+durmaktadır. Kritiklik sıralamasında dördüncü, ama ağdaki konumu diğer kritik
+bölgelerin hiçbirine benzemiyor.
+
+En benzer bölgeler tablosu bunu sayısallaştırır:
+
+| Bölge | En benzer 3 bölge |
+|---|---|
+| Upper East Side North (#1) | Lincoln Square East 0,920 · Central Park 0,918 · Yorkville West 0,915 |
+| Midtown Center (#3) | Midtown East 0,925 · Lincoln Square West 0,913 · Sutton Place/Turtle Bay N 0,911 |
+| **JFK Airport (#4)** | **Ozone Park 0,842 · Whitestone 0,840 · Heartland Village 0,835** |
+
+Manhattan bölgeleri komşu Manhattan bölgelerine benzerken, JFK'ye en benzer
+bölgeler Queens ve Staten Island'ın dış mahalleleridir. Node2Vec işlevsel değil
+**konumsal** benzerlik ölçtüğü için bu doğrudur: JFK'nin akış ağındaki
+komşuları gerçekten dış ilçe bölgeleridir — Ozone Park havalimanının
+bitişiğindedir.
+
+Bu, §6.4'teki parçalanma bulgusunun bağımsız bir doğrulamasıdır. JFK, Manhattan
+çekirdeğine ait olmadığı hâlde ona bağlanan tek yapısal köprü olduğu için,
+çıkarıldığında dış ilçe ağı Manhattan'dan kopar ve ağ 16 parçaya bölünür.
+
+> Not: LaGuardia Airport, JFK'ye benzerlik sıralamasında 258 bölge içinde
+> 13. sıradadır (0,816) — yüksek ama en yüksek değil. Havalimanlarının
+> birbirine en çok benzeyen bölgeler olduğu beklentisi ölçümle
+> doğrulanmamıştır; ayrıntı [VERIFICATION.md](VERIFICATION.md) §7.
+
 ---
 
 ## 7. Bulgular
@@ -450,10 +499,13 @@ bölünmesi NetworkX sürümüne ve düğüm ekleme sırasına duyarlıdır; 182
 ile 181/46/31 arasında oynayabilmektedir. Toplam düğüm sayısı ve genel yapı
 korunur.
 
-**Node2Vec eklentisi ölçülmemiştir.** `gnn_node2vec.py` yazılmış ve
-çalışabilir durumdadır, ancak bu raporda bildirilen bir sonucu yoktur. Ayrıca
-tam graf yerine `map_data.json` içindeki en yoğun 300 kenarı kullanır; bu,
-benzerlik sonuçlarını yüksek hacimli koridorlara doğru yanlı hâle getirir.
+**Node2Vec gömmeleri tek bir tohumla üretilmiştir.** Rastgele yürüyüş ve
+Word2Vec eğitimi stokastiktir; farklı tohumlarla benzerlik skorları birkaç
+yüzdelik oynayabilir. Raporda bildirilen sıralamalar tek koşuya dayanır,
+tohum duyarlılığı analizi yapılmamıştır. Sıralamanın genel yapısı (Manhattan
+bölgelerinin birbirine, JFK'nin dış ilçelere benzemesi) topluluk yapısıyla
+tutarlı olduğu için sağlam kabul edilmiştir, ancak tekil skorlar kesin
+değerler olarak okunmamalıdır.
 
 **İki motor birebir aynı sonucu vermez.** Lokal ve Spark ETL'lerinin filtre
 kümeleri farklıdır. Bildirilen tüm sayılar lokal motora aittir.
@@ -493,7 +545,7 @@ ağının ötesine geçip gerçek bir şehir hareketlilik ağı kurulmasını sa
 ## 10. Yeniden Üretim
 
 Bu rapordaki tüm sayılar ve şekiller aşağıdaki komutlarla yeniden üretilebilir.
-Adım adım rehber ve beklenen çıktı için [VERIFICATION.md](VERIFICATION.md) §7,
+Adım adım rehber ve beklenen çıktı için [VERIFICATION.md](VERIFICATION.md) §8,
 modül parametreleri için [MODULES.md](MODULES.md).
 
 ```bash

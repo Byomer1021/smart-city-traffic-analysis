@@ -235,11 +235,78 @@ sonucudur ve dürüst anlatım savunması çok daha kolaydır.
 | "2,5 GB on disk" (midterm) | Ham Parquet 607 MB. Ham + dönüştürülmüş + birleşik sayılırsa ~2,2 GB, o hâlde savunulabilir. |
 | Sunum slayt 10 "CUMULATIVE LOSS" | −%8,2 / −%7,4 / −%5,2 değerleri kümülatif değil, 1./3./5. adımların tek tek düşüşleri. Toplam ~%34 doğru, başlık yanlış. |
 | Louvain sürüm duyarlılığı | `seed=42` verilmesine rağmen sonuç NetworkX sürümüne ve düğüm ekleme sırasına duyarlı. Pipeline üzerinden 182/44/32, bağımsız betikte 181/46/31 çıktı. Toplam 258 her ikisinde de doğru. |
-| Node2Vec sonuçları | Sunum slayt 13'teki benzerlik skorları (LaGuardia 0,88, Penn Station 0,71, Times Sq 0,65) ölçülmüş değil — slaytta "Expected Answer (sanity check)" olarak işaretli. Repoda `embeddings.npz` yok. Jüri çıktı isterse önce `gnn_node2vec.py` çalıştırılmalı. |
+| Node2Vec sonuçları | Sunum slayt 13'teki skorlar ölçüm değildi; şimdi ölçüldü ve **iddiayı doğrulamıyor**. Ayrıntı: §7 |
 
 ---
 
-## 7. Yeniden üretim
+## 7. Node2Vec: ölçülen sonuç sunumla uyuşmuyor
+
+Sunumun 13. slaytı şu soruyu soruyor: *"JFK Airport'a en çok hangi bölgeler
+benziyor?"* ve cevabı **LaGuardia 0,88 / Penn Station 0,71 / Times Sq 0,65**
+olarak veriyor. Slayt bunu dürüstçe "Expected Answer (sanity check)" diye
+etiketlemiş — yani beklenti, ölçüm değil. Sonuç şöyle yorumlanmış:
+*"Algoritma havalimanlarını birbirine benzer buluyor — model doğru çalışıyor."*
+
+21 Ağustos 2026'da gerçekten çalıştırıldı.
+
+### Önce iki hata çıktı
+
+**1. Graf çok seyrekti.** `gnn_node2vec.py` girdi olarak `map_data.json`
+alıyordu; o dosya harita okunabilirliği için yalnızca **en yoğun 300 rotayı**
+taşıyor. Sonuç: 258 düğümün **217'si (%84) izole**, ortalama derece 2,3, graf
+218 parçaya bölünmüş. İzole düğümden yapılan rastgele yürüyüş tek düğümlük
+"cümle" üretiyor ve Word2Vec anlamlı bir şey öğrenemiyor — tüm benzerlik
+skorları `1.000` çıkıyordu.
+
+Çözüm: modüle `--data` bayrağı eklendi. Verildiğinde gömme, ham yolculuk
+verisinden kurulan **tam graf** (258 düğüm, 9.990 kenar) üzerinde eğitiliyor.
+İzole düğüm oranı yüksekse artık uyarı basılıyor.
+
+**2. Düğüm kimlikleri tip değiştiriyordu.** `node2vec` kütüphanesi düğüm
+kimliklerini kendi içinde float'a çevirip sözlükte `"236.0"` gibi anahtarlar
+üretiyor; kod ise `model.wv[str(236)]` arıyordu ve `KeyError` alıyordu. Graf
+eğitimden önce string kimliklere sabitlenerek giderildi.
+
+### Ölçülen sonuç
+
+| | Sunumdaki beklenti | Ölçülen |
+|---|---|---|
+| 1. sıra | LaGuardia Airport — 0,88 | **Ozone Park — 0,842** |
+| 2. sıra | Penn Station — 0,71 | Whitestone — 0,840 |
+| 3. sıra | Times Sq/Theatre — 0,65 | Heartland Village/Todt Hill — 0,835 |
+| 4. sıra | — | Willets Point — 0,832 |
+| 5. sıra | — | Glendale — 0,828 |
+
+**LaGuardia gerçekte 13. sırada, 0,816 ile.** 258 bölge içinde ilk %5 — yani
+yüksek, ama en yüksek değil. Sunumdaki "sanity check geçti" yorumu bu hâliyle
+savunulamaz.
+
+### Bu neden beklenen bir sonuç
+
+Node2Vec **işlevsel** değil **konumsal** benzerlik ölçer: bir düğümün ağ
+içindeki komşuluk yapısını kodlar. JFK'nin akış ağındaki komşuları Queens'in
+dış bölgeleridir — Ozone Park havalimanının hemen bitişiğinde, Willets Point ve
+Whitestone da Queens'te. Yani algoritma "JFK, bu Queens bölgelerinin durduğu
+yerde duruyor" diyor ve bu yapısal olarak doğru.
+
+Bu sonuç projenin ana bulgusuyla da tutarlıdır: JFK'nin dış ilçe ağına gömülü
+olması, tam da çıkarıldığında ağın 16 parçaya bölünmesinin sebebidir. Louvain'in
+JFK'yi 182 bölgelik "dış ilçeler + havalimanları" topluluğuna (T1) koyması da
+aynı şeyi söylüyor.
+
+`results/new_york_city/07_gnn_embeddings.png` figüründe bu görülebilir: sağ
+panelde PageRank'ta ilk 10'a giren bölgeler sıkı bir Manhattan kümesi
+oluştururken, **#4 (JFK) bu kümenin tamamen dışında, tek başına** durmaktadır.
+Top-10 içinde Manhattan kümesine ait olmayan tek düğüm odur.
+
+**Öneri:** Slayt 13 ölçülen değerlerle güncellenmeli ve yorum
+"havalimanları birbirine benziyor" yerine "Node2Vec konumsal benzerlik ölçüyor;
+JFK'yi dış ilçe ağına ait gösteriyor — köprü rolünün ve parçalanma bulgusunun
+bağımsız bir doğrulaması" şeklinde değiştirilmeli. Bu hâliyle bulgu daha güçlü.
+
+---
+
+## 8. Yeniden üretim
 
 ```bash
 # 1) Bağımlılıklar

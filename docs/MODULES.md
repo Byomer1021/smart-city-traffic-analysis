@@ -339,17 +339,36 @@ python local_pipeline/gnn_node2vec.py \
 | `--length` | `80` | Yürüyüş uzunluğu |
 | `--p` | `1.0` | Return parametresi (düşük → BFS benzeri) |
 | `--q` | `1.0` | In-out parametresi (düşük → DFS benzeri) |
+| `--data` | — | Ham yolculuk verisi (CSV/Parquet). **Tam graf için gerekli** |
+| `--city` | `nyc` | `--data` ile birlikte kullanılacak şehir anahtarı |
 
 `p = q = 1` DeepWalk'a denk gelir. Çıktılar: `.npz` (düğümler, gömme matrisi,
 kosinüs benzerlik matrisi) ve `_summary.json` (top-10 bölgenin en benzer 5
 komşusu).
 
-> **Girdisi `map_data.json`'dır**, ham veri değil. Yani önce
-> `export_map_data.py` çalıştırılmalıdır. Ayrıca yalnızca JSON'daki **en yoğun
-> 300 kenar** üzerinden graf kurar — tam graf değil. Bu, benzerlik sonuçlarını
-> yüksek hacimli koridorlara doğru yanlı hale getirir.
+> **`--data` olmadan çalıştırmayın.** Düğüm metadata'sı (isim, PageRank,
+> topluluk) `--input map_data.json` dosyasından gelir, ancak o dosya harita
+> okunabilirliği için yalnızca **en yoğun 300 rotayı** taşır. NYC verisinde bu,
+> 258 düğümün **217'sini (%84) izole** bırakır; izole düğümden yapılan rastgele
+> yürüyüş tek düğümlük "cümle" üretir ve Word2Vec anlamlı bir gömme öğrenemez —
+> tüm benzerlik skorları `1.000` çıkar. `--data` verildiğinde graf ham veriden
+> yeniden kurulur (258 düğüm, 9.990 kenar). İzole düğüm oranı %20'yi aşarsa
+> modül uyarı basar.
+
+Doğru kullanım:
+
+```bash
+python local_pipeline/gnn_node2vec.py \
+    --input  results/new_york_city/map_data.json \
+    --data   data/nyc/formatted/nyc_trips_2023_all.parquet \
+    --city   nyc \
+    --output results/new_york_city/embeddings.npz
+```
 
 `node2vec` ve `gensim` gerektirir (`requirements.txt`'te tanımlı).
+
+> `gensim` 4.4 `numpy < 2` ister; kurulumu ortamdaki numpy'ı 1.26'ya
+> düşürebilir. Bu projenin diğer bağımlılıkları bundan etkilenmez.
 
 ---
 

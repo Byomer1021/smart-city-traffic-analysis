@@ -342,14 +342,16 @@ panelli grafik çizer: solda topluluk renklendirmesi, sağda PageRank kritikliğ
 "bu bölge hangi bölgelere benziyor" sorusunu ekler. İkisi farklı bilgi verir ve
 birlikte kullanıldığında bölge tipolojisi çıkarılabilir.
 
-**Açık kalan iş:** Modüller yazıldı ve çalışabilir durumda, ancak kaydedilmiş
-bir sonuç üretmediler — repoda `embeddings.npz` yok. Final sunumunun 13.
-slaytındaki benzerlik skorları slaytta da "Expected Answer (sanity check)"
-olarak işaretlenmiş beklenti değerleridir, ölçüm değildir.
+**Dönem içinde açık kalan iş:** Modüller yazıldı ve çalışabilir durumdaydı,
+ancak kaydedilmiş bir sonuç üretmediler. Final sunumunun 13. slaytındaki
+benzerlik skorları slaytta da "Expected Answer (sanity check)" olarak
+işaretlenmiş beklenti değerleridir, ölçüm değildi.
 
-Ayrıca modül tam graf yerine `map_data.json` içindeki en yoğun 300 kenarı
-kullanır; bu, benzerlik sonuçlarını yüksek hacimli koridorlara doğru yanlı hâle
-getirir. Tam graf üzerinde çalıştırılması gelecek iş olarak duruyor.
+21 Ağustos 2026'da çalıştırıldı ve iki hata çıktı: modül tam graf yerine
+`map_data.json`'daki 300 kenarı kullandığı için düğümlerin %84'ü izoleydi ve
+gömmeler çöküyordu; ayrıca `node2vec` kütüphanesi düğüm kimliklerini float'a
+çevirdiği için sözlük araması başarısız oluyordu. İkisi de giderildi, sonuçlar
+aşağıdaki turda kayda geçti.
 
 ---
 
@@ -420,3 +422,20 @@ geçmişine hiç girmemiştir.
 **6. Dokümantasyon yazıldı:** [MODULES.md](../MODULES.md),
 [FINAL_REPORT.md](../FINAL_REPORT.md), [VERIFICATION.md](../VERIFICATION.md)
 ve bu belge.
+
+**7. İnteraktif harita yapıldı ve yayınlandı.** `visualization/viewer.html`
+depoyu klonlayan herkes için 404 veriyordu — `.gitignore` kapsamındaki bir
+dosyayı okuyordu. Yerine sunumda gösterilen arayüzü gerçekten uygulayan bir
+harita yazıldı: istatistik paneli, rota ve bölge filtreleri, topluluk
+renklendirme anahtarı, tıklanabilir top-15 listesi ve **adım adım darboğaz
+simülasyonu**. JFK çıkarıldığında bileşen sayacının 1'den 16'ya sıçraması artık
+canlı izlenebiliyor. GitHub Pages'te yayında:
+https://byomer1021.github.io/smart-city-traffic-analysis/
+
+**8. Node2Vec çalıştırıldı.** Modüle `--data` bayrağı eklendi (tam graf
+üzerinde eğitim) ve düğüm kimliği tip hatası giderildi. Sonuç, sunumdaki
+beklentiyi doğrulamadı: JFK'ye en benzer bölgeler havalimanları değil, Queens'in
+dış mahalleleri çıktı (Ozone Park 0,842); LaGuardia 258 bölge içinde 13. sırada.
+Node2Vec işlevsel değil konumsal benzerlik ölçtüğü için bu tutarlıdır ve
+parçalanma bulgusunu bağımsız olarak destekler. Eksik olan
+`07_gnn_embeddings.png` figürü üretildi.

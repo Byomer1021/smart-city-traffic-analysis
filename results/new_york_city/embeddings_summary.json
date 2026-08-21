@@ -1,0 +1,376 @@
+{
+  "city": {
+    "name": "New York City",
+    "country": "USA",
+    "currency": "USD",
+    "center_lat": 40.7268,
+    "center_lon": -73.9286,
+    "zoom": 11
+  },
+  "stats": {
+    "num_nodes": 258,
+    "embedding_dim": 128
+  },
+  "similar_zones_top10": {
+    "236": {
+      "name": "Upper East Side North",
+      "rank": 1,
+      "similar": [
+        {
+          "id": 142,
+          "name": "Lincoln Square East",
+          "similarity": 0.9197956323623657,
+          "pagerank": 0.017491
+        },
+        {
+          "id": 43,
+          "name": "Central Park",
+          "similarity": 0.9181332588195801,
+          "pagerank": 0.007846
+        },
+        {
+          "id": 263,
+          "name": "Yorkville West",
+          "similarity": 0.9147992730140686,
+          "pagerank": 0.014099
+        },
+        {
+          "id": 229,
+          "name": "Sutton Place/Turtle Bay North",
+          "similarity": 0.9145617485046387,
+          "pagerank": 0.013552
+        },
+        {
+          "id": 262,
+          "name": "Yorkville East",
+          "similarity": 0.909286379814148,
+          "pagerank": 0.010346
+        }
+      ]
+    },
+    "237": {
+      "name": "Upper East Side South",
+      "rank": 2,
+      "similar": [
+        {
+          "id": 140,
+          "name": "Lenox Hill East",
+          "similarity": 0.9179133772850037,
+          "pagerank": 0.016888
+        },
+        {
+          "id": 239,
+          "name": "Upper West Side South",
+          "similarity": 0.9125105738639832,
+          "pagerank": 0.018085
+        },
+        {
+          "id": 262,
+          "name": "Yorkville East",
+          "similarity": 0.9078431129455566,
+          "pagerank": 0.010346
+        },
+        {
+          "id": 229,
+          "name": "Sutton Place/Turtle Bay North",
+          "similarity": 0.906883955001831,
+          "pagerank": 0.013552
+        },
+        {
+          "id": 162,
+          "name": "Midtown East",
+          "similarity": 0.9068686962127686,
+          "pagerank": 0.017905
+        }
+      ]
+    },
+    "161": {
+      "name": "Midtown Center",
+      "rank": 3,
+      "similar": [
+        {
+          "id": 162,
+          "name": "Midtown East",
+          "similarity": 0.925371527671814,
+          "pagerank": 0.017905
+        },
+        {
+          "id": 143,
+          "name": "Lincoln Square West",
+          "similarity": 0.9128894805908203,
+          "pagerank": 0.009338
+        },
+        {
+          "id": 229,
+          "name": "Sutton Place/Turtle Bay North",
+          "similarity": 0.9108442664146423,
+          "pagerank": 0.013552
+        },
+        {
+          "id": 186,
+          "name": "Penn Station/Madison Sq West",
+          "similarity": 0.9101328253746033,
+          "pagerank": 0.013563
+        },
+        {
+          "id": 29,
+          "name": "Brighton Beach",
+          "similarity": 0.9075796604156494,
+          "pagerank": 0.000977
+        }
+      ]
+    },
+    "132": {
+      "name": "JFK Airport",
+      "rank": 4,
+      "similar": [
+        {
+          "id": 180,
+          "name": "Ozone Park",
+          "similarity": 0.841701865196228,
+          "pagerank": 0.000798
+        },
+        {
+          "id": 252,
+          "name": "Whitestone",
+          "similarity": 0.8401258587837219,
+          "pagerank": 0.000821
+        },
+        {
+          "id": 118,
+          "name": "Heartland Village/Todt Hill",
+          "similarity": 0.8353111147880554,
+          "pagerank": 0.000765
+        },
+        {
+          "id": 253,
+          "name": "Willets Point",
+          "similarity": 0.8316559195518494,
+          "pagerank": 0.000764
+        },
+        {
+          "id": 102,
+          "name": "Glendale",
+          "similarity": 0.8277143239974976,
+          "pagerank": 0.000909
+        }
+      ]
+    },
+    "170": {
+      "name": "Murray Hill",
+      "rank": 5,
+      "similar": [
+        {
+          "id": 163,
+          "name": "Midtown North",
+          "similarity": 0.9238401651382446,
+          "pagerank": 0.01528
+        },
+        {
+          "id": 186,
+          "name": "Penn Station/Madison Sq West",
+          "similarity": 0.9235115051269531,
+          "pagerank": 0.013563
+        },
+        {
+          "id": 107,
+          "name": "Gramercy",
+          "similarity": 0.9222139120101929,
+          "pagerank": 0.013453
+        },
+        {
+          "id": 233,
+          "name": "UN/Turtle Bay South",
+          "similarity": 0.9190742373466492,
+          "pagerank": 0.011233
+        },
+        {
+          "id": 229,
+          "name": "Sutton Place/Turtle Bay North",
+          "similarity": 0.9133796095848083,
+          "pagerank": 0.013552
+        }
+      ]
+    },
+    "230": {
+      "name": "Times Sq/Theatre District",
+      "rank": 6,
+      "similar": [
+        {
+          "id": 264,
+          "name": "N/A",
+          "similarity": 0.9231910705566406,
+          "pagerank": 0.002174
+        },
+        {
+          "id": 48,
+          "name": "Clinton East",
+          "similarity": 0.9154868721961975,
+          "pagerank": 0.015562
+        },
+        {
+          "id": 170,
+          "name": "Murray Hill",
+          "similarity": 0.9025017023086548,
+          "pagerank": 0.019183
+        },
+        {
+          "id": 162,
+          "name": "Midtown East",
+          "similarity": 0.9020009636878967,
+          "pagerank": 0.017905
+        },
+        {
+          "id": 164,
+          "name": "Midtown South",
+          "similarity": 0.8997256755828857,
+          "pagerank": 0.013127
+        }
+      ]
+    },
+    "239": {
+      "name": "Upper West Side South",
+      "rank": 7,
+      "similar": [
+        {
+          "id": 142,
+          "name": "Lincoln Square East",
+          "similarity": 0.928290843963623,
+          "pagerank": 0.017491
+        },
+        {
+          "id": 50,
+          "name": "Clinton West",
+          "similarity": 0.9246119856834412,
+          "pagerank": 0.007031
+        },
+        {
+          "id": 24,
+          "name": "Bloomingdale",
+          "similarity": 0.9222003221511841,
+          "pagerank": 0.003393
+        },
+        {
+          "id": 238,
+          "name": "Upper West Side North",
+          "similarity": 0.9160160422325134,
+          "pagerank": 0.015788
+        },
+        {
+          "id": 43,
+          "name": "Central Park",
+          "similarity": 0.9135677814483643,
+          "pagerank": 0.007846
+        }
+      ]
+    },
+    "162": {
+      "name": "Midtown East",
+      "rank": 8,
+      "similar": [
+        {
+          "id": 229,
+          "name": "Sutton Place/Turtle Bay North",
+          "similarity": 0.938115119934082,
+          "pagerank": 0.013552
+        },
+        {
+          "id": 141,
+          "name": "Lenox Hill West",
+          "similarity": 0.9284250736236572,
+          "pagerank": 0.016555
+        },
+        {
+          "id": 79,
+          "name": "East Village",
+          "similarity": 0.9269421100616455,
+          "pagerank": 0.014051
+        },
+        {
+          "id": 29,
+          "name": "Brighton Beach",
+          "similarity": 0.9258643388748169,
+          "pagerank": 0.000977
+        },
+        {
+          "id": 161,
+          "name": "Midtown Center",
+          "similarity": 0.925371527671814,
+          "pagerank": 0.023445
+        }
+      ]
+    },
+    "142": {
+      "name": "Lincoln Square East",
+      "rank": 9,
+      "similar": [
+        {
+          "id": 238,
+          "name": "Upper West Side North",
+          "similarity": 0.9383950233459473,
+          "pagerank": 0.015788
+        },
+        {
+          "id": 143,
+          "name": "Lincoln Square West",
+          "similarity": 0.9315288066864014,
+          "pagerank": 0.009338
+        },
+        {
+          "id": 239,
+          "name": "Upper West Side South",
+          "similarity": 0.928290843963623,
+          "pagerank": 0.018085
+        },
+        {
+          "id": 47,
+          "name": "Claremont/Bathgate",
+          "similarity": 0.9209374189376831,
+          "pagerank": 0.000858
+        },
+        {
+          "id": 48,
+          "name": "Clinton East",
+          "similarity": 0.920486569404602,
+          "pagerank": 0.015562
+        }
+      ]
+    },
+    "140": {
+      "name": "Lenox Hill East",
+      "rank": 10,
+      "similar": [
+        {
+          "id": 237,
+          "name": "Upper East Side South",
+          "similarity": 0.9179133772850037,
+          "pagerank": 0.023821
+        },
+        {
+          "id": 229,
+          "name": "Sutton Place/Turtle Bay North",
+          "similarity": 0.8953178524971008,
+          "pagerank": 0.013552
+        },
+        {
+          "id": 263,
+          "name": "Yorkville West",
+          "similarity": 0.8934820890426636,
+          "pagerank": 0.014099
+        },
+        {
+          "id": 236,
+          "name": "Upper East Side North",
+          "similarity": 0.8934506177902222,
+          "pagerank": 0.025732
+        },
+        {
+          "id": 262,
+          "name": "Yorkville East",
+          "similarity": 0.884382963180542,
+          "pagerank": 0.010346
+        }
+      ]
+    }
+  }
+}

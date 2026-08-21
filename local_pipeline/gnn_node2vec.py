@@ -55,6 +55,47 @@ def load_graph_from_map_data(json_path: str):
     return G, node_meta, data["city"]
 
 
+def build_full_graph(data_path: str, city: str, node_meta: dict):
+    """
+    Ham yolculuk verisinden TAM grafi kurar.
+
+    map_data.json haritada okunabilirlik icin yalnizca en yogun 300 rotayi
+    tasir. NYC verisinde bu, 258 dugumun 217'sini (%84) izole birakiyor;
+    izole dugumden yapilan rastgele yuruyus tek dugumluk "cumle" uretiyor ve
+    Word2Vec anlamli bir gomme ogrenemiyor (tum benzerlikler 1.000 cikiyor).
+    Bu fonksiyon ayni ETL'i uygulayip 9.990 kenarli tam grafi dondurur.
+    """
+    import sys
+    from pathlib import Path as _Path
+    root = _Path(__file__).resolve().parents[1]
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+
+    from config.city_config import get_city_config
+    from local_pipeline.traffic_analysis_generic import etl_pipeline, build_graph
+
+    print(f"[1b/5] Tam graf kuruluyor: {data_path}")
+    config = get_city_config(city)
+    edge_df = etl_pipeline(data_path, config)
+    G = build_graph(edge_df, config)
+
+    # map_data.json'da olup grafta olmayan dugumleri de ekle (metadata tutarliligi)
+    for node_id in node_meta:
+        if node_id not in G:
+            G.add_node(node_id)
+
+    return G
+
+
+def warn_if_fragmented(G) -> None:
+    """Izole dugum orani yuksekse uyar - gommeler anlamsiz cikar."""
+    isolated = [n for n, deg in G.degree() if deg == 0]
+    ratio = len(isolated) / max(G.number_of_nodes(), 1)
+    if ratio > 0.2:
+        print(f"      [UYARI] Dugumlerin %{ratio*100:.0f}'i izole ({len(isolated)}/{G.number_of_nodes()}).")
+        print(f"              Gommeler anlamsiz cikacaktir. --data ile tam grafi verin.")
+
+
 def train_node2vec(G: nx.DiGraph,
                    dimensions: int = 128,
                    walk_length: int = 80,
@@ -74,6 +115,14 @@ def train_node2vec(G: nx.DiGraph,
     print(f"      dim={dimensions}, walks={num_walks}, length={walk_length}, p={p}, q={q}")
 
     t0 = time.time()
+
+    # node2vec, dugum kimliklerini kendi icinde float'a cevirip "236.0" gibi
+    # sozluk anahtarlari uretebiliyor; bu durumda model.wv[str(236)] bulunamaz.
+    # Grafi bastan string kimliklere cevirerek tipin degismesini engelliyoruz.
+    original_nodes = list(G.nodes())
+    label = {n: str(n) for n in original_nodes}
+    G = nx.relabel_nodes(G, label, copy=True)
+
     node2vec = Node2Vec(
         G, dimensions=dimensions, walk_length=walk_length,
         num_walks=num_walks, p=p, q=q, workers=workers,
@@ -85,8 +134,15 @@ def train_node2vec(G: nx.DiGraph,
     print(f"      Eğitim tamam ({elapsed:.1f}s)")
 
     # Embedding matrisi oluştur
-    nodes = list(G.nodes())
-    emb_matrix = np.array([model.wv[str(n)] for n in nodes])
+    missing = [n for n in original_nodes if label[n] not in model.wv.key_to_index]
+    if missing:
+        raise RuntimeError(
+            f"{len(missing)} dugum icin gomme uretilemedi (ornek: {missing[:5]}). "
+            f"Genellikle izole dugumlerden kaynaklanir; --data ile tam grafi verin."
+        )
+
+    nodes = original_nodes
+    emb_matrix = np.array([model.wv[label[n]] for n in nodes])
     print(f"      Embedding boyutu: {emb_matrix.shape}")
 
     return nodes, emb_matrix
@@ -187,6 +243,11 @@ def main():
     parser.add_argument("--length", type=int, default=80, help="Walk uzunluğu")
     parser.add_argument("--p", type=float, default=1.0, help="Return parameter")
     parser.add_argument("--q", type=float, default=1.0, help="In-out parameter")
+    parser.add_argument("--data", default=None,
+                        help="Ham yolculuk verisi (CSV/Parquet). Verilirse gomme TAM graf "
+                             "uzerinde egitilir; verilmezse map_data.json'daki en yogun "
+                             "300 rota kullanilir ve sonuc guvenilmez olur.")
+    parser.add_argument("--city", default="nyc", help="--data ile birlikte kullanilacak sehir anahtari")
     args = parser.parse_args()
 
     print("═" * 65)
@@ -194,6 +255,10 @@ def main():
     print("═" * 65)
 
     G, node_meta, city = load_graph_from_map_data(args.input)
+
+    if args.data:
+        G = build_full_graph(args.data, args.city, node_meta)
+    warn_if_fragmented(G)
     nodes, embeddings = train_node2vec(
         G, dimensions=args.dim, walk_length=args.length,
         num_walks=args.walks, p=args.p, q=args.q,

@@ -25,6 +25,7 @@ results/**
 !results/new_york_city/
 !results/new_york_city/*.png
 !results/new_york_city/map_data.json
+!results/new_york_city/embeddings_summary.json
 
 # Generated plots at root
 # NOT: bas taraftaki "/" olmadan bu desenler her dizinde eslesiyordu ve
