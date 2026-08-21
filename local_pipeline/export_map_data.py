@@ -115,6 +115,11 @@ def main(city_name="istanbul", num_trips=2_000_000, data_path=None):
     original_flow = sum(d["weight"] for _, _, d in G.edges(data=True))
     original_edges = G.number_of_edges()
     G_sim = G.copy()
+    # Baslangic bileseni: interaktif haritada "1 -> 16" gecisini gosterebilmek
+    # icin her adimda zayif bagli bilesen sayisi da kaydedilir. Bu, TAM graf
+    # uzerinde hesaplanir; JSON'a yalnizca en yogun 300 kenar yazildigi icin
+    # istemci tarafinda dogru hesaplanamaz.
+    initial_components = len(list(nx.weakly_connected_components(G)))
     simulation = []
     for node in top5:
         name = config.get_zone_name(node)
@@ -126,6 +131,8 @@ def main(city_name="istanbul", num_trips=2_000_000, data_path=None):
             "removed_name": name,
             "remaining_flow_pct": round((cur_flow / original_flow) * 100, 2),
             "remaining_edge_pct": round((G_sim.number_of_edges() / original_edges) * 100, 2),
+            "num_components": len(list(nx.weakly_connected_components(G_sim))),
+            "nodes_remaining": G_sim.number_of_nodes(),
         })
 
     # Build JSON
@@ -223,6 +230,7 @@ def main(city_name="istanbul", num_trips=2_000_000, data_path=None):
             "total_flow": int(original_flow),
             "density": round(nx.density(G), 4),
             "n_communities": len(communities),
+            "initial_components": initial_components,
         },
     }
 

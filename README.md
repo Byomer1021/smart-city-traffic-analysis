@@ -249,24 +249,33 @@ gcloud dataproc jobs submit pyspark \
 
 ### C. İnteraktif Harita
 
-`visualization/viewer.html` bağımlılıksız, tek dosyalık bir Leaflet +
-OpenStreetMap görüntüleyicisidir. `map_data.json` okur; düğümleri PageRank'a
-göre boyutlandırır, bölge tipine göre renklendirir (kırmızı hotspot / mavi hub /
-yeşil normal) ve en yoğun rotaları çizer.
+**Canlı:** https://byomer1021.github.io/smart-city-traffic-analysis/
 
-`fetch` `file://` üzerinden çalışmadığı için basit bir HTTP sunucusu gerekir:
+`index.html` bağımlılıksız (yalnızca Leaflet CDN), tek dosyalık bir interaktif
+haritadır. `results/new_york_city/map_data.json` okur ve şunları sunar:
+
+| Özellik | Açıklama |
+|---|---|
+| Bölge katmanı | Düğüm boyutu PageRank ile ölçeklenir; topluluğa veya bölge tipine göre renklenir |
+| Rota katmanı | En yoğun rotalar, kalınlık ve saydamlık yolculuk hacmiyle ölçeklenir |
+| Filtreler | Gösterilen rota sayısı ve "en kritik ilk N bölge" kaydırıcıları |
+| Top-15 listesi | Tıklanınca haritada o bölgeye uçar |
+| **Darboğaz simülasyonu** | "Sıradakini çıkar" ile düğümler tek tek silinir; kalan akış, kalan rota, bileşen sayısı ve kalan bölge canlı güncellenir. JFK çıkarıldığında ağın 16 parçaya bölünmesi adım adım izlenir |
+
+Bileşen sayısı **tam çizge** (258 düğüm, 9.990 kenar) üzerinde hesaplanıp
+JSON'a yazılır; haritada okunabilirlik için yalnızca en yoğun rotalar çizilir.
+
+Yerelde çalıştırmak için (`fetch` `file://` üzerinden çalışmaz):
 
 ```bash
 python -m http.server 8000
-# tarayıcı: http://localhost:8000/visualization/viewer.html
+# tarayıcı: http://localhost:8000/
 ```
 
-Hangi sonucun gösterileceği dosya içindeki `mapDataPath` sabitiyle belirlenir.
-NYC gerçek koşusu için: `/results/new_york_city/map_data.json`
-
-> `visualization/istanbul_traffic_map.jsx` şu an yalnızca bir **yer tutucudur** —
-> çalışan bir React bileşeni içermez. Sunumdaki interaktif harita `viewer.html`
-> üzerinden gösterilmiştir.
+> `visualization/viewer.html` artık `index.html`'e yönlendiren bir yer
+> tutucudur — eski bağlantılar kırılmasın diye duruyor.
+> `visualization/istanbul_traffic_map.jsx` ise hiç doldurulmamış bir React
+> bileşeni taslağıdır.
 
 ---
 

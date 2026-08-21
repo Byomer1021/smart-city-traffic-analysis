@@ -410,29 +410,51 @@ Lokal karşılıklar:
 
 ---
 
-## `visualization/viewer.html`
+## `index.html`
 
-Leaflet + OpenStreetMap tabanlı, bağımlılıksız tek dosyalık harita
-görüntüleyici. `map_data.json` okur; düğümleri PageRank'a göre boyutlandırır,
-`zone_type`'a göre renklendirir (kırmızı hotspot / mavi hub / yeşil normal),
-en yoğun rotaları çizgi olarak basar.
+İnteraktif harita uygulaması. Depo kökündedir çünkü GitHub Pages'in servis
+ettiği sayfa budur: https://byomer1021.github.io/smart-city-traffic-analysis/
 
-Yerelden açmak için basit bir HTTP sunucusu gerekir (`fetch` `file://`
-üzerinden çalışmaz):
+Bağımlılığı yalnızca Leaflet CDN'idir; başka hiçbir kütüphane kullanmaz.
+`results/new_york_city/map_data.json` dosyasını **göreli** yolla okur — mutlak
+yol kullanılmamalıdır, çünkü GitHub Pages proje siteleri
+`/<repo-adı>/` alt yolunda servis edilir ve baştaki `/` bağlantıyı kırar.
+
+| Bölüm | İşlev |
+|---|---|
+| İstatistik paneli | Bölge, rota, yolculuk ve topluluk sayısı |
+| Rota kaydırıcısı | Çizilen rota sayısı (0 – JSON'daki kenar sayısı) |
+| Bölge kaydırıcısı | Yalnızca PageRank sıralamasında ilk N bölgeyi göster |
+| Topluluk anahtarı | Renklendirmeyi topluluk ↔ bölge tipi arasında değiştirir |
+| Top-15 listesi | Tıklanınca haritada o bölgeye uçar; çıkarılan bölgeler üstü çizili görünür |
+| Simülasyon paneli | Düğümleri sırayla çıkarır; kalan akış, kalan rota, bileşen sayısı ve kalan bölge sayısını günceller |
+
+Simülasyon paneli `map_data.json` içindeki `simulation` dizisini kullanır.
+`num_components` ve `nodes_remaining` alanları **tam çizge** üzerinde
+hesaplanır; JSON'a yalnızca en yoğun 300 kenar yazıldığı için bu değerler
+istemci tarafında doğru hesaplanamaz.
+
+Yerelde çalıştırmak için (`fetch` `file://` üzerinden çalışmaz):
 
 ```bash
 python -m http.server 8000
-# tarayıcı: http://localhost:8000/visualization/viewer.html
+# tarayıcı: http://localhost:8000/
 ```
 
-Okuduğu yol dosyanın içindeki `mapDataPath` sabitinde tanımlıdır. NYC sonucunu
-görmek için `/results/new_york_city/map_data.json` yapın.
+## `visualization/viewer.html`
+
+Artık `index.html`'e yönlendiren bir yer tutucu. Eski bağlantılar ve
+dokümantasyon referansları kırılmasın diye duruyor.
+
+Önceki hâli bağımsız bir görüntüleyiciydi ancak `.gitignore` kapsamındaki
+`results/all_cities/map_data_combined.json` dosyasını okuduğu için depoyu
+klonlayan herkes 404 alıyordu.
 
 ## `visualization/istanbul_traffic_map.jsx`
 
 **Şu an yalnızca yer tutucu** — iki satırlık yorumdan ibaret, çalışan bir React
-bileşeni içermiyor. Sunumdaki interaktif harita `viewer.html` üzerinden
-gösterilmiştir.
+bileşeni içermiyor. Sunumdaki interaktif harita demosu için `index.html`
+kullanılmalıdır.
 
 ---
 

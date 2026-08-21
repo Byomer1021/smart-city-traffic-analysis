@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NYC Trafik Darboğazı Haritası</title>
+<meta name="description" content="38,3 milyon NYC taksi yolculuğu üzerinde PageRank tabanlı darboğaz tespiti ve düğüm silme simülasyonu." />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #171d26;
+    --panel-2: #1e2631;
+    --line: #2b3644;
+    --txt: #e6edf3;
+    --txt-dim: #8b98a9;
+    --accent: #4aa8ff;
+    --danger: #ff5c5c;
+    --warn: #ffb84a;
+    --ok: #3ddc84;
+    --c0: #3ddc84;
+    --c1: #4aa8ff;
+    --c2: #ffb84a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { display: flex; background: var(--bg); color: var(--txt); overflow: hidden; }
+
+  #panel {
+    width: 340px; flex: 0 0 340px; height: 100%; overflow-y: auto;
+    background: var(--panel); border-right: 1px solid var(--line); padding: 18px 16px 28px;
+  }
+  #map { flex: 1; height: 100%; background: #eee; }
+
+  h1 { font-size: 17px; margin: 0 0 3px; letter-spacing: -0.2px; }
+  .sub { font-size: 12px; color: var(--txt-dim); margin: 0 0 18px; line-height: 1.45; }
+
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+  .stat { background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px; padding: 9px 10px; }
+  .stat .v { font-size: 17px; font-weight: 650; letter-spacing: -0.3px; }
+  .stat .k { font-size: 10.5px; color: var(--txt-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+  h2 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.9px; color: var(--txt-dim);
+    margin: 22px 0 10px; padding-bottom: 7px; border-bottom: 1px solid var(--line); font-weight: 600;
+  }
+  h2:first-of-type { margin-top: 0; }
+
+  .ctl { margin-bottom: 13px; }
+  .ctl label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; color: var(--txt); }
+  .ctl label .val { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 600; }
+  input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 12.5px; cursor: pointer; user-select: none; }
+  .check input { accent-color: var(--accent); cursor: pointer; width: 15px; height: 15px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 5px 12px; font-size: 11.5px; color: var(--txt-dim); margin-top: 9px; }
+  .legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: -1px; }
+
+  ol.top { list-style: none; margin: 0; padding: 0; counter-reset: r; }
+  ol.top li {
+    display: flex; align-items: baseline; gap: 8px; padding: 6px 7px; border-radius: 5px;
+    font-size: 12.5px; cursor: pointer; transition: background .12s;
+  }
+  ol.top li:hover { background: var(--panel-2); }
+  ol.top li.gone { opacity: .32; text-decoration: line-through; }
+  ol.top .rk { color: var(--txt-dim); font-variant-numeric: tabular-nums; min-width: 20px; font-size: 11px; }
+  ol.top .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  ol.top .pr { color: var(--accent); font-variant-numeric: tabular-nums; font-size: 11.5px; }
+
+  .simbar { display: flex; gap: 7px; margin-bottom: 12px; }
+  button {
+    flex: 1; background: var(--panel-2); color: var(--txt); border: 1px solid var(--line);
+    border-radius: 6px; padding: 8px 10px; font-size: 12.5px; font-family: inherit;
+    cursor: pointer; transition: background .12s, border-color .12s;
+  }
+  button:hover:not(:disabled) { background: #27313f; border-color: #3a4757; }
+  button:disabled { opacity: .38; cursor: not-allowed; }
+  button.primary { background: var(--danger); border-color: var(--danger); color: #fff; font-weight: 600; }
+  button.primary:hover:not(:disabled) { background: #ff7070; border-color: #ff7070; }
+
+  .simgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 11px; }
+  .simcell { background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 8px 9px; }
+  .simcell .v { font-size: 15px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .simcell .k { font-size: 10px; color: var(--txt-dim); text-transform: uppercase; letter-spacing: .4px; margin-top: 1px; }
+  .simcell.alarm { border-color: var(--danger); }
+  .simcell.alarm .v { color: var(--danger); }
+
+  .log { font-size: 11.5px; color: var(--txt-dim); line-height: 1.65; }
+  .log div { display: flex; gap: 7px; }
+  .log .x { color: var(--danger); }
+
+  .note {
+    font-size: 11px; color: var(--txt-dim); line-height: 1.5; margin-top: 14px;
+    padding-top: 12px; border-top: 1px solid var(--line);
+  }
+  .note a { color: var(--accent); }
+
+  #err {
+    position: absolute; inset: 0; display: none; place-items: center; padding: 40px;
+    background: var(--bg); color: var(--txt); z-index: 9999; text-align: center; font-size: 14px; line-height: 1.6;
+  }
+  #err code { background: var(--panel-2); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+
+  .leaflet-popup-content-wrapper { background: var(--panel); color: var(--txt); border-radius: 8px; }
+  .leaflet-popup-tip { background: var(--panel); }
+  .leaflet-popup-content { margin: 11px 13px; font-size: 12.5px; line-height: 1.6; }
+  .leaflet-popup-content b { font-size: 13.5px; }
+  .leaflet-popup-content .pk { color: var(--txt-dim); }
+
+  @media (max-width: 760px) {
+    body { flex-direction: column; }
+    #panel { width: 100%; flex: 0 0 auto; max-height: 46%; border-right: none; border-bottom: 1px solid var(--line); }
+    #map { flex: 1; }
+  }
+</style>
+</head>
+<body>
+
+<div id="panel">
+  <h1>NYC Trafik Darboğazı Haritası</h1>
+  <p class="sub">NYC TLC Yellow Taxi 2023 — 38,3 milyon yolculuktan kurulmuş çizge üzerinde PageRank tabanlı yapısal darboğaz analizi.</p>
+
+  <div class="stats">
+    <div class="stat"><div class="v" id="s-nodes">—</div><div class="k">Bölge</div></div>
+    <div class="stat"><div class="v" id="s-edges">—</div><div class="k">Rota</div></div>
+    <div class="stat"><div class="v" id="s-flow">—</div><div class="k">Yolculuk</div></div>
+    <div class="stat"><div class="v" id="s-comm">—</div><div class="k">Topluluk</div></div>
+  </div>
+
+  <h2>Görünüm</h2>
+  <div class="ctl">
+    <label>Gösterilen rota <span class="val" id="v-edges">100</span></label>
+    <input type="range" id="r-edges" min="0" max="299" value="100" />
+  </div>
+  <div class="ctl">
+    <label>En kritik ilk N bölge <span class="val" id="v-nodes">258</span></label>
+    <input type="range" id="r-nodes" min="10" max="258" value="258" />
+  </div>
+  <div class="ctl">
+    <label class="check"><input type="checkbox" id="c-comm" checked /> Topluluğa göre renklendir</label>
+  </div>
+  <div class="legend" id="legend"></div>
+
+  <h2>Darboğaz Simülasyonu</h2>
+  <div class="simbar">
+    <button id="b-step" class="primary">Sıradakini çıkar</button>
+    <button id="b-reset" disabled>Sıfırla</button>
+  </div>
+  <div class="simgrid">
+    <div class="simcell"><div class="v" id="m-flow">100%</div><div class="k">Kalan akış</div></div>
+    <div class="simcell"><div class="v" id="m-edge">100%</div><div class="k">Kalan rota</div></div>
+    <div class="simcell" id="cell-comp"><div class="v" id="m-comp">1</div><div class="k">Bileşen</div></div>
+    <div class="simcell"><div class="v" id="m-node">258</div><div class="k">Kalan bölge</div></div>
+  </div>
+  <div class="log" id="log"><div style="color:var(--txt-dim)">Ağ bozulmamış durumda.</div></div>
+
+  <h2>En Kritik 15 Bölge</h2>
+  <ol class="top" id="top15"></ol>
+
+  <div class="note">
+    Bileşen sayısı <strong>tam çizge</strong> (258 düğüm, 9.990 kenar) üzerinde
+    hesaplanmıştır; haritada okunabilirlik için yalnızca en yoğun rotalar çizilir.
+    <br /><br />
+    <a href="https://github.com/Byomer1021/smart-city-traffic-analysis" target="_blank" rel="noopener">Kaynak kod ve rapor →</a>
+  </div>
+</div>
+
+<div id="map"></div>
+<div id="err"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var DATA_URL = "results/new_york_city/map_data.json";
+  var COMM = ["#3ddc84", "#4aa8ff", "#ffb84a", "#c48fff", "#ff8f6b"];
+  var TYPE = { hotspot: "#ff5c5c", hub: "#4aa8ff", normal: "#3ddc84" };
+
+  var map = L.map("map", { zoomControl: true, preferCanvas: true });
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+    maxZoom: 18,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+  }).addTo(map);
+  map.setView([40.73, -73.93], 11);
+
+  var edgeLayer = L.layerGroup().addTo(map);
+  var nodeLayer = L.layerGroup().addTo(map);
+
+  var DATA = null;      // yuklenen JSON
+  var NODES = [];       // pagerank'a gore sirali
+  var removed = {};     // {id: true} simulasyonda cikarilanlar
+  var step = 0;         // mevcut simulasyon adimi
+
+  function fmtFlow(n) {
+    if (n >= 1e6) return (n / 1e6).toFixed(1).replace(".", ",") + "M";
+    if (n >= 1e3) return Math.round(n / 1e3) + "K";
+    return String(n);
+  }
+  function fmtInt(n) { return n.toLocaleString("tr-TR"); }
+  function byId(id) { return document.getElementById(id); }
+
+  function nodeColor(n) {
+    if (removed[n.id]) return "#6b7280";
+    return byId("c-comm").checked
+      ? COMM[n.community % COMM.length]
+      : (TYPE[n.zone_type] || "#8b98a9");
+  }
+
+  function render() {
+    edgeLayer.clearLayers();
+    nodeLayer.clearLayers();
+
+    var maxRank = +byId("r-nodes").value;
+    var nEdges = +byId("r-edges").value;
+
+    // --- rotalar ---
+    var drawn = 0;
+    for (var i = 0; i < DATA.edges.length && drawn < nEdges; i++) {
+      var e = DATA.edges[i];
+      if (removed[e.src] || removed[e.dst]) continue;
+      if (!e.src_lat || !e.dst_lat) continue;
+      L.polyline([[e.src_lat, e.src_lon], [e.dst_lat, e.dst_lon]], {
+        color: "#5b6b7f",
+        weight: 0.7 + e.weight_norm * 4.5,
+        opacity: 0.14 + e.weight_norm * 0.4,
+        interactive: false
+      }).addTo(edgeLayer);
+      drawn++;
+    }
+
+    // --- bolgeler ---
+    NODES.forEach(function (n) {
+      if (!n.lat || !n.lon) return;
+      if (n.rank > maxRank && !removed[n.id]) return;
+      var gone = !!removed[n.id];
+      var m = L.circleMarker([n.lat, n.lon], {
+        radius: gone ? 5 : 4 + n.pagerank_norm * 15,
+        color: gone ? "#ff5c5c" : "#ffffff",
+        weight: gone ? 2 : 1.2,
+        fillColor: nodeColor(n),
+        fillOpacity: gone ? 0.25 : 0.86,
+        dashArray: gone ? "3,3" : null
+      }).addTo(nodeLayer);
+
+      m.bindPopup(
+        "<b>" + n.name + "</b>" + (gone ? ' <span style="color:#ff5c5c">— çıkarıldı</span>' : "") +
+        '<br/><span class="pk">PageRank sırası</span> #' + n.rank +
+        '<br/><span class="pk">PageRank</span> ' + n.pagerank.toFixed(5) +
+        '<br/><span class="pk">Betweenness</span> ' + n.betweenness.toFixed(5) +
+        '<br/><span class="pk">Topluluk</span> T' + (n.community + 1) +
+        '<br/><span class="pk">Giriş / çıkış</span> ' + fmtInt(n.in_flow) + " / " + fmtInt(n.out_flow)
+      );
+    });
+  }
+
+  function renderTop15() {
+    var ol = byId("top15");
+    ol.innerHTML = "";
+    NODES.slice(0, 15).forEach(function (n) {
+      var li = document.createElement("li");
+      if (removed[n.id]) li.className = "gone";
+      li.innerHTML = '<span class="rk">#' + n.rank + '</span>' +
+                     '<span class="nm">' + n.name + '</span>' +
+                     '<span class="pr">' + n.pagerank.toFixed(4) + '</span>';
+      li.onclick = function () {
+        if (!n.lat) return;
+        map.flyTo([n.lat, n.lon], 13, { duration: 0.7 });
+      };
+      ol.appendChild(li);
+    });
+  }
+
+  function renderSim() {
+    var s = step === 0 ? null : DATA.simulation[step - 1];
+    byId("m-flow").textContent = s ? String(s.remaining_flow_pct).replace(".", ",") + "%" : "100%";
+    byId("m-edge").textContent = s ? String(s.remaining_edge_pct).replace(".", ",") + "%" : "100%";
+    byId("m-node").textContent = s ? s.nodes_remaining : DATA.stats.total_nodes;
+
+    var comp = s ? s.num_components : (DATA.stats.initial_components || 1);
+    byId("m-comp").textContent = comp;
+    byId("cell-comp").className = "simcell" + (comp > 1 ? " alarm" : "");
+
+    var log = byId("log");
+    if (step === 0) {
+      log.innerHTML = '<div style="color:var(--txt-dim)">Ağ bozulmamış durumda.</div>';
+    } else {
+      log.innerHTML = "";
+      for (var i = 0; i < step; i++) {
+        var e = DATA.simulation[i];
+        var prev = i === 0 ? 100 : DATA.simulation[i - 1].remaining_flow_pct;
+        var drop = (prev - e.remaining_flow_pct).toFixed(1).replace(".", ",");
+        var row = document.createElement("div");
+        row.innerHTML = '<span class="x">✕</span><span>' + e.removed_name +
+                        ' <span style="color:var(--danger)">−' + drop + '%</span>' +
+                        (e.num_components > 1 && (i === 0 || DATA.simulation[i - 1].num_components === 1)
+                          ? ' <span style="color:var(--warn)">→ ağ ' + e.num_components + ' parçaya bölündü</span>' : "") +
+                        '</span>';
+        log.appendChild(row);
+      }
+    }
+
+    byId("b-step").disabled = step >= DATA.simulation.length;
+    byId("b-reset").disabled = step === 0;
+    byId("b-step").textContent = step >= DATA.simulation.length
+      ? "Simülasyon bitti" : "Sıradakini çıkar";
+  }
+
+  function boot(data) {
+    DATA = data;
+    NODES = data.nodes.slice().sort(function (a, b) { return b.pagerank - a.pagerank; });
+
+    byId("s-nodes").textContent = fmtInt(data.stats.total_nodes);
+    byId("s-edges").textContent = fmtInt(data.stats.total_edges);
+    byId("s-flow").textContent = fmtFlow(data.stats.total_flow);
+    byId("s-comm").textContent = data.stats.n_communities;
+
+    byId("r-nodes").max = data.stats.total_nodes;
+    byId("r-nodes").value = data.stats.total_nodes;
+    byId("v-nodes").textContent = data.stats.total_nodes;
+    byId("r-edges").max = data.edges.length;
+    byId("r-edges").value = Math.min(100, data.edges.length);
+    byId("v-edges").textContent = byId("r-edges").value;
+
+    buildLegend();
+    render();
+    renderTop15();
+    renderSim();
+
+    var pts = NODES.filter(function (n) { return n.lat && n.lon; })
+                   .map(function (n) { return [n.lat, n.lon]; });
+    if (pts.length) map.fitBounds(L.latLngBounds(pts), { padding: [30, 30] });
+  }
+
+  function buildLegend() {
+    var el = byId("legend");
+    if (byId("c-comm").checked) {
+      el.innerHTML = DATA.communities.map(function (c, i) {
+        return '<span><i style="background:' + COMM[i % COMM.length] + '"></i>T' + (i + 1) + ' (' + c.size + ')</span>';
+      }).join("");
+    } else {
+      el.innerHTML =
+        '<span><i style="background:' + TYPE.hotspot + '"></i>Yoğun bölge</span>' +
+        '<span><i style="background:' + TYPE.hub + '"></i>Ulaşım merkezi</span>' +
+        '<span><i style="background:' + TYPE.normal + '"></i>Normal</span>';
+    }
+  }
+
+  // --- olaylar ---
+  byId("r-edges").oninput = function () { byId("v-edges").textContent = this.value; render(); };
+  byId("r-nodes").oninput = function () { byId("v-nodes").textContent = this.value; render(); };
+  byId("c-comm").onchange = function () { buildLegend(); render(); };
+
+  byId("b-step").onclick = function () {
+    if (step >= DATA.simulation.length) return;
+    removed[DATA.simulation[step].removed_id] = true;
+    step++;
+    render(); renderTop15(); renderSim();
+  };
+  byId("b-reset").onclick = function () {
+    removed = {}; step = 0;
+    render(); renderTop15(); renderSim();
+  };
+
+  // --- veri yukleme ---
+  fetch(DATA_URL)
+    .then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    })
+    .then(boot)
+    .catch(function (e) {
+      var d = byId("err");
+      d.style.display = "grid";
+      d.innerHTML = "<div><strong>Harita verisi yüklenemedi.</strong><br/><br/>" +
+        "Beklenen dosya: <code>" + DATA_URL + "</code><br/>Hata: " + e.message + "<br/><br/>" +
+        "Bu sayfa <code>file://</code> üzerinden çalışmaz.<br/>Depo kökünden bir sunucu başlatın:<br/><br/>" +
+        "<code>python -m http.server 8000</code><br/><br/>" +
+        "sonra <code>http://localhost:8000/</code> adresini açın.</div>";
+    });
+})();
+</script>
+</body>
+</html>

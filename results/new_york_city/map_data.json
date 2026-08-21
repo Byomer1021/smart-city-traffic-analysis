@@ -8032,35 +8032,45 @@
       "removed_id": 236,
       "removed_name": "Upper East Side North",
       "remaining_flow_pct": 91.8,
-      "remaining_edge_pct": 97.71
+      "remaining_edge_pct": 97.71,
+      "num_components": 1,
+      "nodes_remaining": 257
     },
     {
       "step": 2,
       "removed_id": 237,
       "removed_name": "Upper East Side South",
       "remaining_flow_pct": 84.64,
-      "remaining_edge_pct": 95.41
+      "remaining_edge_pct": 95.41,
+      "num_components": 1,
+      "nodes_remaining": 256
     },
     {
       "step": 3,
       "removed_id": 161,
       "removed_name": "Midtown Center",
       "remaining_flow_pct": 77.2,
-      "remaining_edge_pct": 92.78
+      "remaining_edge_pct": 92.78,
+      "num_components": 1,
+      "nodes_remaining": 255
     },
     {
       "step": 4,
       "removed_id": 132,
       "removed_name": "JFK Airport",
       "remaining_flow_pct": 71.11,
-      "remaining_edge_pct": 89.09
+      "remaining_edge_pct": 89.09,
+      "num_components": 16,
+      "nodes_remaining": 254
     },
     {
       "step": 5,
       "removed_id": 170,
       "removed_name": "Murray Hill",
       "remaining_flow_pct": 65.94,
-      "remaining_edge_pct": 86.54
+      "remaining_edge_pct": 86.54,
+      "num_components": 16,
+      "nodes_remaining": 253
     }
   ],
   "communities": [
@@ -8106,6 +8116,7 @@
     "total_edges": 9990,
     "total_flow": 35420777,
     "density": 0.1507,
-    "n_communities": 3
+    "n_communities": 3,
+    "initial_components": 1
   }
 }
