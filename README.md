@@ -17,6 +17,40 @@ Proje iki modda çalışır:
 
 ---
 
+## Dokümantasyon
+
+| Belge | İçerik |
+|---|---|
+| [docs/FINAL_REPORT.md](docs/FINAL_REPORT.md) | Final teknik rapor — yöntem, sonuçlar, bulgular, kısıtlar |
+| [docs/MODULES.md](docs/MODULES.md) | Modül referansı — her scriptin girdi/çıktısı ve parametreleri |
+| [docs/VERIFICATION.md](docs/VERIFICATION.md) | Sonuçların ham veriyle doğrulanması ve tespit edilen tutarsızlıklar |
+| [docs/weekly/README.md](docs/weekly/README.md) | Haftalık ilerleme raporu |
+| [docs/DATA_FORMAT.md](docs/DATA_FORMAT.md) | Veri format gereksinimleri |
+
+---
+
+## Ana Sonuçlar — NYC TLC 2023
+
+NYC TLC Yellow Taxi 2023 veri setinin tamamı (38.310.226 kayıt) işlenerek
+elde edilmiştir. Tüm sayılar ham veriden yeniden hesaplanarak doğrulanmıştır
+([VERIFICATION.md](docs/VERIFICATION.md)).
+
+| Metrik | Değer |
+|---|---|
+| İşlenen ham kayıt | 38.310.226 |
+| Temizleme sonrası | 37.401.069 (%97,63) |
+| Çizge | 258 düğüm, 9.990 kenar, yoğunluk 0,1507 |
+| Grafa giren yolculuk | 35.420.777 |
+| En kritik bölge | Upper East Side North (PageRank 0,02573) |
+| En yüksek köprü rolü | East Harlem South (betweenness 1,00 — PageRank'ta 17.) |
+| 5 düğüm silme etkisi | %34,1 akış kaybı |
+| Yapısal kırılma | JFK Airport çıkarılınca ağ 1 → 16 bileşene bölünüyor |
+| Çalışma süresi | 40,7 sn (AWS EC2 t3.xlarge, 16 GB RAM) |
+
+Şekiller: [results/new_york_city/](results/new_york_city/)
+
+---
+
 ## Klasör Yapısı
 
 ```
@@ -29,10 +63,18 @@ smart-city-traffic-analysis/
 │   └── city_config.py                     ← İstanbul, NYC, Ankara tanımları
 │                                             + JSON'dan yükleme desteği
 │
+├── setup_and_run.sh                       ← EC2 uçtan uca kurulum (8 adım)
+│
 ├── local_pipeline/                        ← Lokal Demo (Pandas + NetworkX)
-│   ├── generate_data.py                   ← Sentetik veri üretici
 │   ├── traffic_analysis_generic.py        ← Tam analiz pipeline'ı
-│   └── export_map_data.py                 ← Harita için JSON üretici
+│   ├── export_map_data.py                 ← Harita için JSON üretici
+│   ├── generate_data.py                   ← Sentetik veri üretici
+│   ├── convert_data.py                    ← Ham şema → pipeline şeması
+│   ├── merge_months.py                    ← Aylık dosyaları birleştirme
+│   ├── build_nyc_centroids.py             ← Shapefile → bölge koordinatları
+│   ├── auto_config_builder.py             ← Veriden otomatik şehir config'i
+│   ├── gnn_node2vec.py                    ← Node2Vec gömme (GNN eklentisi)
+│   └── gnn_visualize.py                   ← t-SNE gömme görselleştirmesi
 │
 ├── spark_pipeline/                        ← Bulut Üretim (PySpark + GraphFrames)
 │   └── spark_traffic_pipeline.py          ← Tam dağıtık pipeline
@@ -41,10 +83,11 @@ smart-city-traffic-analysis/
 │                                              Görselleştirme → JSON)
 │
 ├── visualization/                         ← İnteraktif Harita
-│   └── istanbul_traffic_map.jsx           ← React + Leaflet harita bileşeni
+│   ├── viewer.html                        ← Leaflet + OSM görüntüleyici
+│   └── istanbul_traffic_map.jsx           ← (yer tutucu — uygulanmadı)
 │
 ├── results/                               ← Çıktılar
-│   └── istanbul/                          ← İstanbul analiz sonuçları
+│   └── new_york_city/                     ← NYC TLC 2023 gerçek koşusu
 │       ├── 01_dashboard.png               ← Ana dashboard
 │       ├── 02_network_topology.png        ← Ağ topolojisi
 │       ├── 03_simulation_detail.png       ← Simülasyon detayları
@@ -54,8 +97,17 @@ smart-city-traffic-analysis/
 │       └── map_data.json                  ← İnteraktif harita verisi
 │
 └── docs/                                  ← Dokümantasyon
-    └── DATA_FORMAT.md                     ← Veri format gereksinimleri
+    ├── FINAL_REPORT.md                    ← Final teknik rapor
+    ├── MODULES.md                         ← Modül referansı
+    ├── VERIFICATION.md                    ← Sonuçların doğrulanması
+    ├── DATA_FORMAT.md                     ← Veri format gereksinimleri
+    └── weekly/README.md                   ← Haftalık ilerleme raporu
 ```
+
+> `results/` klasörü genel olarak `.gitignore` kapsamındadır; yalnızca NYC
+> gerçek koşusunun figürleri ve `map_data.json` dosyası, rapordaki şekillerin
+> kaynağıyla birlikte gelmesi için versiyon kontrolüne alınmıştır. Diğer
+> şehirlerin çıktıları pipeline çalıştırıldığında yerel olarak üretilir.
 
 ---
 
@@ -64,10 +116,36 @@ smart-city-traffic-analysis/
 ### 1. Bağımlılıkları Kur
 
 ```bash
-pip install pandas numpy networkx matplotlib seaborn scipy
+pip install -r requirements.txt
 ```
 
-### 2. Sentetik Veri ile Çalıştır (Sıfır Hazırlık)
+> **Windows'ta:** Scriptler konsola Unicode kutu karakterleri basar. Çalıştırmadan
+> önce `set PYTHONUTF8=1` yapın, aksi hâlde `cp1254` kod sayfasında
+> `UnicodeEncodeError` alırsınız.
+
+### 2. Gerçek NYC Verisiyle Çalıştır (rapordaki sonuçlar)
+
+Boş bir Ubuntu sunucusunda tek komutla — veri indirme, dönüştürme, birleştirme
+ve analiz dâhil:
+
+```bash
+./setup_and_run.sh          # script başında MONTHS=12 yapın
+```
+
+Veri zaten hazırsa doğrudan:
+
+```bash
+python local_pipeline/traffic_analysis_generic.py \
+    --city nyc --data data/nyc/formatted/nyc_trips_2023_all.parquet --top-k 5
+
+python local_pipeline/export_map_data.py \
+    --city nyc --data data/nyc/formatted/nyc_trips_2023_all.parquet
+```
+
+Beklenen çıktı: 258 düğüm, 9.990 kenar, 35.420.777 yolculuk, %34,1 akış kaybı,
+`1 → 16` bileşen. Ayrıntı: [docs/VERIFICATION.md](docs/VERIFICATION.md).
+
+### 3. Sentetik Veri ile Çalıştır (Sıfır Hazırlık)
 
 ```bash
 # İstanbul analizi (sentetik veri otomatik üretilir)
@@ -81,7 +159,7 @@ python traffic_analysis_generic.py --city nyc
 python traffic_analysis_generic.py --city ankara --trips 500000
 ```
 
-### 3. Sonuçlara Bak
+### 4. Sonuçlara Bak
 
 Çalıştırma bittiğinde `results/<şehir>/` klasöründe 6 görselleştirme PNG dosyası ve terminal çıktısında detaylı rapor oluşur.
 
@@ -171,14 +249,24 @@ gcloud dataproc jobs submit pyspark \
 
 ### C. İnteraktif Harita
 
-`visualization/istanbul_traffic_map.jsx` dosyası bir React bileşenidir. Leaflet + OpenStreetMap kullanır. Claude.ai'de doğrudan artifact olarak çalışır. Kendi projenizde kullanmak için:
+`visualization/viewer.html` bağımlılıksız, tek dosyalık bir Leaflet +
+OpenStreetMap görüntüleyicisidir. `map_data.json` okur; düğümleri PageRank'a
+göre boyutlandırır, bölge tipine göre renklendirir (kırmızı hotspot / mavi hub /
+yeşil normal) ve en yoğun rotaları çizer.
+
+`fetch` `file://` üzerinden çalışmadığı için basit bir HTTP sunucusu gerekir:
 
 ```bash
-# React projesine ekle
-npm install leaflet react-leaflet
-# JSX dosyasını components/ klasörüne kopyala
-# map_data.json'ı public/ veya API'den servis et
+python -m http.server 8000
+# tarayıcı: http://localhost:8000/visualization/viewer.html
 ```
+
+Hangi sonucun gösterileceği dosya içindeki `mapDataPath` sabitiyle belirlenir.
+NYC gerçek koşusu için: `/results/new_york_city/map_data.json`
+
+> `visualization/istanbul_traffic_map.jsx` şu an yalnızca bir **yer tutucudur** —
+> çalışan bir React bileşeni içermez. Sunumdaki interaktif harita `viewer.html`
+> üzerinden gösterilmiştir.
 
 ---
 
