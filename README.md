@@ -487,3 +487,13 @@ PR(v) = (1 - α) / N + α × Σ [PR(u) / out_degree(u)]
 3. Apache Spark GraphX Programming Guide. https://spark.apache.org/docs/latest/graphx-programming-guide.html
 4. NYC Taxi and Limousine Commission Trip Record Data. https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page
 5. İBB Açık Veri Portalı. https://data.ibb.gov.tr/
+
+---
+
+## Lisans
+
+Kod [MIT lisansı](LICENSE) ile yayımlanmıştır — Ömer Can Atlı, Kamil Duru (2026).
+
+Analiz edilen NYC TLC yolculuk verisi New York Şehri tarafından kamu malı
+olarak yayımlanmaktadır ve bu lisansın kapsamı dışındadır:
+https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page
